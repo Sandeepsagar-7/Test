@@ -1,0 +1,290 @@
+ Commands & Expected Results
+How to Use
+Open your terminal (PowerShell or Git Bash). Run each block exactly as shown.
+Where it says <yourusername>, replace with your Docker Hub / GitHub username.
+SRS questions are theory—no CLI. Everything else below is commands + expected result.
+Common Setup (once per machine)
+# Create a workspace and verify tools
+mkdir -p ~/Documents/C-Lab && cd ~/Documents/C-Lab
+# Check versions (should print versions; if not, install/fix PATH)
+git --version
+java -version
+javac -version
+mvn -v
+docker --version
+# If Maven says JRE / JAVA_HOME wrong, set JAVA_HOME to JDK root and re-open terminal
+# (Adjust the path to your installed JDK)
+setx JAVA_HOME "C:\Program Files\Eclipse Adoptium\jdk-17"
+SET-1 — Hospital Management System
+Q2. Maven Java Web Application — Commands
+# 1) Get project (if internet). Otherwise skip to archetype below.
+git clone https://github.com/KumbhamBhargavi75/HospitalMgmtSystem.git
+cd HospitalMgmtSystem
+dir # or: ls
+# Expected: shows pom.xml, src/, etc.
+# (Offline fallback) Create a Maven webapp scaffold with the same name
+# Use ONLY if git clone isn't possible
+mvn -q archetype:generate -DgroupId=com.kmit.hms -DartifactId=HospitalMgmtSystem -DarchetypeArtifactId=cd HospitalMgmtSystem
+# 2) Build with correct lifecycle (lowercase)
+mvn clean package
+# Expected: BUILD SUCCESS, creates target\HospitalMgmtSystem.war (after fixes below)
+# 3) Open POM to edit required fields when questions ask for fixes
+notepad pom.xml
+# 3a) Packaging for Tomcat (WAR) and control finalName (Q2.6/Q2.10)
+# <packaging>war</packaging> inside the <project>
+# <build><finalName>HospitalMgmtSystem</finalName></build> # or FoodSystem, as asked
+mvn clean package
+# Expected: Building war: ...\target\HospitalMgmtSystem.war (or FoodSystem.war)
+# 3b) Add correct JUnit dependency (fix wrong coords like SE:junit) (Q2.5)
+# <dependency><groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version><scope>mvn clean test
+# Expected: Tests phase runs; no "Could not find artifact SE:junit"
+# 3c) Add Servlet API 2.5 (Q2.3) or 4.0.0-b01 (Q2.7). Keep only ONE at a time.
+# <dependency><groupId>javax.servlet</groupId><artifactId>servlet-api</artifactId><version>2.5</# OR
+# <dependency><groupId>javax.servlet</groupId><artifactId>javax.servlet-api</artifactId><version>mvn clean package
+# Expected: BUILD SUCCESS
+# 3d) If JDK 21 causes failure, target a stable release (17) (Q2.4)
+# Add in pom: <properties><maven.compiler.release>17</maven.compiler.release></properties>
+mvn clean package
+# Expected: BUILD SUCCESS
+# 3e) If branch push is asked after fixes (Q2.13)
+git checkout -b fix/pom-cleanups
+git add pom.xml
+git commit -m "Fix POM: packaging war, finalName, servlet/junit, compiler release"
+# Set your own repo URL before push if original is read-only:
+# git remote set-url origin https://github.com/<your-github-username>/HospitalMgmtSystem.git
+git push -u origin fix/pom-cleanups
+# Expected: Branch created on your GitHub (requires internet & permissions)
+Q3. Git & GitHub Integration — Commands
+# 1) Discard local unstaged changes in one file
+git restore <file>
+# 2) Amend last commit message (not pushed)
+git commit --amend -m "Correct message"
+# 3) View commit history (readable graph)
+git log --oneline --graph --decorate --all
+# 4) From main, create and switch to branch Feature/patientand
+git checkout -b Feature/patientand
+# 5) Push local commits to remote (first time set upstream)
+git push -u origin Feature/patientand
+# 6) See all branches (local + remote)
+git branch -a
+# 7) Create branch Suggestions and merge it into Feature/patientand
+git checkout -b Suggestions
+git checkout Feature/patientand
+git merge Suggestions
+# 8) Pull latest changes into current branch
+git pull --rebase
+# 9) First-time push with upstream (generic)
+git push -u origin <current-branch-name>
+# 10) Change origin to a different remote URL and push
+git remote set-url origin <NEW-REMOTE-URL>
+git push -u origin <current-branch-name>
+# 11) Bring local branch up-to-date without losing local changes
+git pull --rebase
+# 12) Delete remote branch 'patient' (or the given name)
+git push origin --delete patient
+# (If branch was Feature/patientand):
+# git push origin --delete Feature/patientand
+# 13) Apply a .patch and record it
+git apply <file.patch>
+git add -A
+git commit -m "Apply patch: <short description>"
+Q4. Docker containerization — Commands
+# Build image from Dockerfile in project root
+docker build -t hospital-mgmt .
+# Expected: "Successfully tagged hospital-mgmt:latest"
+# List images
+docker images
+# Run app mapping 9090(host) -> 8080(container)
+docker run -d --name hms -p 9090:8080 hospital-mgmt
+# Expected: container id; docker ps shows 'hms' Up ... 0.0.0.0:9090->8080/tcp
+# Pull and run official redis, list running
+docker pull redis:latest
+docker run -d --name myredis -p 6379:6379 redis:latest
+docker ps
+# Tag & push to Docker Hub (replace yourusername)
+docker tag hospital-mgmt yourusername/hms:latest
+docker login
+docker push yourusername/hms:latest
+# Forgot port mapping? stop & rerun with -p
+docker stop hms && docker rm hms
+docker run -d --name hms -p 9090:8080 hospital-mgmt
+# Inspect logs (debug crashes)
+docker logs -f hms
+# Exec into container
+docker exec -it hms /bin/bash
+# List all containers including exited
+docker ps -a
+docker ps -a -f status=exited
+Q5. Docker Compose — Commands (App + MongoDB, app on 7079)
+# Create docker-compose.yml in project root with the following content:
+# --- BEGIN ---
+# version: "3.9"
+# services:
+# app:
+# image: yourusername/hms:latest
+# container_name: cms-app
+# ports:
+# - "7079:8080"
+# depends_on:
+# - mongo
+# environment:
+# MONGO_URL: mongodb://mongo:27017/cmsdb
+# mongo:
+# image: mongo:6
+# container_name: cms-mongo
+# ports:
+# - "27017:27017"
+# volumes:
+# - mongo_data:/data/db
+# volumes:
+# mongo_data:
+# --- END ---
+# Bring up the stack
+docker compose up -d
+# Expected: two containers running (cms-app, cms-mongo)
+docker compose ps
+# Expected: cms-app ... 0.0.0.0:7079->8080/tcp ; cms-mongo ... 27017/tcp
+# Connect to Mongo shell (optional)
+docker exec -it cms-mongo mongosh
+SET-2 — Campus Event Management System
+Q2. Maven Web Application — Commands (Fixes)
+# 1) Clone or create project
+git clone https://github.com/KumbhamBhargavi75/CampusMgmtSystem.git
+cd CampusMgmtSystem
+# (Offline fallback)
+# mvn -q archetype:generate -DgroupId=com.kmit.cems -DartifactId=CampusMgmtSystem -DarchetypeArtifactId=# cd CampusMgmtSystem
+# 2) Build (expect errors if Java/plugin old)
+mvn clean package
+# 3) Fix compiler to modern Java; migrate JUnit 3.8.1 -> 4/5
+notepad pom.xml
+# Ensure:
+# <packaging>war</packaging>
+# <properties><maven.compiler.release>17</maven.compiler.release></properties>
+# Replace old junit 3.8.1 with:
+# <dependency><groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version><scope>mvn clean test
+# 4) If version missing in JUnit dep, set it explicitly (3M question)
+# (Edit pom) add <version>4.13.2</version> under junit dependency
+mvn clean test
+# 5) If artifactId misspelled, correct it and rebuild
+# e.g., <artifactId>cms</artifactId> wrong -> should be actual artifactId 'CampusMgmtSystem'
+mvn clean package
+# 6) Add MySQL connector dependency (connect to DB)
+notepad pom.xml
+# <dependency><groupId>mysql</groupId><artifactId>mysql-connector-j</artifactId><version>8.3.0</mvn clean package
+# 7) Add jQuery via webjars (check how it works in webapp)
+# <dependency><groupId>org.webjars</groupId><artifactId>jquery</artifactId><version>3.6.4</version></mvn clean package
+# 8) Change default build output directory (target -> build-output)
+# In pom: <build><directory>build-output</directory></build>
+mvn clean package
+# Expected: packages into build-output\CampusMgmtSystem.war
+# 9) Add central dependency: JUnit 4.13-beta-2 (as per paper)
+# (Edit pom) version tag to 4.13-beta-2 if specifically asked
+mvn clean test
+Q3. Git tasks — Commands (same patterns as Set-1)
+# Initialize, branch, commit, push, etc. (repeat as per Set-1 Q3)
+git init
+git add .
+git commit -m "Initial commit for CEMS"
+git checkout -b feature/event-scheduler
+git push -u origin feature/event-scheduler
+git log --oneline --graph --decorate --all
+git pull --rebase
+git merge <branch>
+git push origin --delete <branch>
+git apply <patch-file>
+git commit -m "Apply patch"
+Q4. Docker for Maven App — Commands
+# Build image (name cems-app)
+docker build -t cems-app .
+# Run mapping 8086 (host) -> 8080 (container) if asked
+docker run -d --name cems -p 8086:8080 cems-app
+docker ps
+# Push (replace username)
+docker tag cems-app yourusername/cems:latest
+docker login
+docker push yourusername/cems:latest
+Q5. Docker Compose — TomcatServer + App (ports vary 7007/8086)
+# docker-compose.yml (sample with app exposed on 7007)
+# version: "3.9"
+# services:
+# app:
+# image: yourusername/cems:latest
+# container_name: cems-app
+# ports:
+# - "7007:8080"
+# tomcatserver:
+# image: tomcat:9.0-jdk17-temurin
+# container_name: tomcat-server
+# ports:
+# - "8086:8080"
+docker compose up -d
+docker compose ps
+SET-3 — Food Ordering System
+Q2. Maven Web Application — Commands (Fixes)
+# 1) Clone or create
+git clone https://github.com/KumbhamBhargavi75/foodSystem.git
+cd foodSystem
+# (Offline fallback)
+# mvn -q archetype:generate -DgroupId=com.kmit.fos -DartifactId=FoodSystem -DarchetypeArtifactId=# cd FoodSystem
+# 2) Control finalName and SNAPSHOT behavior
+notepad pom.xml
+# <build><finalName>FoodSystem</finalName></build>
+mvn clean package
+# Expected: target\FoodSystem.war (not FoodSystem-0.0.1-SNAPSHOT.war)
+# 3) Add MySQL connector with correct coordinates (fix "dependency not found")
+# <dependency><groupId>mysql</groupId><artifactId>mysql-connector-j</artifactId><version>8.3.0</mvn clean package
+# 4) Add tomcat7-maven-plugin block (if asked) then run
+# <plugin><artifactId>tomcat7-maven-plugin</artifactId><version>2.2</version></plugin>
+mvn tomcat7:run
+# If it fails because configuration missing, add <groupId>org.apache.tomcat.maven</groupId> and # 5) <url> in pom is project metadata; no command needed
+# 6) Developer removes <dependencies> -> mvn clean package -> expect compile errors for servlet/# 7) Deploy to Tomcat: map context (ROOT.war -> /), SNAPSHOT name affects context path
+# 8) Add central dependency: Servlet API 4.0.1 for modern servlet
+# <dependency><groupId>javax.servlet</groupId><artifactId>javax.servlet-api</artifactId><version>mvn clean package
+Q3. Git tasks — Commands (FOS)
+git init
+git add .
+git commit -m "Initial commit for FOS"
+git checkout -b feature/real-time-status
+git push -u origin feature/real-time-status
+git log --oneline --graph --decorate --all
+git pull --rebase
+git merge feature/real-time-status
+git push origin --delete feature/real-time-status
+Q4. Docker for Maven App — Commands
+# Build image (fos-app) and run on 8080->7078 as per paper
+docker build -t fos-app .
+docker run -d --name fos -p 7078:8080 fos-app
+docker ps
+# Pull nginx and python images, run, verify
+docker pull nginx:latest
+docker run -d --name mynginx -p 8080:80 nginx:latest
+docker pull python:3
+docker run -d --name p3 python:3 tail -f /dev/null
+docker ps
+docker logs fos
+docker exec -it fos /bin/bash
+Q5. Docker Compose — Food Ordering System + PostgreSQL
+# docker-compose.yml content (app on 7078, postgres on 5432)
+# version: "3.9"
+# services:
+# app:
+# image: yourusername/fos:latest
+# container_name: fos-app
+# ports:
+# - "7078:8080"
+# depends_on:
+# - db
+# db:
+# image: postgres:16
+# container_name: fos-db
+# environment:
+# POSTGRES_PASSWORD: secret
+# POSTGRES_USER: fos
+# POSTGRES_DB: fosdb
+# ports:
+# - "5432:5432"
+# volumes:
+# pgdata:
+docker compose up -d
+docker compose ps
+docker exec -it fos-db psql -U fos -d fosdb
