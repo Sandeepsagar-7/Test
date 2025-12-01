@@ -1,0 +1,98 @@
+//redis
+
+Step 1: Pull the redis Image
+
+docker pull redis
+
+Step 2: Run a Redis Container
+
+docker run --name my-redis -d redis
+
+Step 3: Check Running Containers
+
+docker ps
+
+Step 4: Access Redis
+
+docker exec -it my-redis redis-cli
+
+SET name "Alice"
+
+GET name
+
+Step 5: Stop the Redis Container
+
+docker stop my-redis
+
+Step 6: Restart the Redis Container
+
+docker start my-redis
+
+Step 7: Remove the Redis Container
+
+docker rm my-redis
+
+Step 8: Remove the Redis Image  
+
+docker rmi redis
+
+//Dockerfile 
+
+Step 1: Set Up Your Folder
+1. Windows:
+o Create a folder like C:\DockerProjects\Redis.
+o Open Git Bash and navigate to the folder:
+cd /c/DockerProjects/Redis
+
+Step 2: Write the Dockerfile
+FROM redis:latest
+CMD ["redis-server"]
+
+1. docker build -t redisnew  .
+
+2. docker run --name myredisnew -d redisnew
+
+3. docker ps
+
+4. docker stop myredisnew
+
+5. docker login
+
+6. docker ps -a
+
+7. docker commit 0e993d2009a1 sandeepsagar/redis1 
+
+8. docker images
+
+9. docker push sandeepsagar/redis1
+
+10. docker rm 0e993d2009a1  // container id of myredisnew
+
+11. docker rmi sandeepsagar/redis1
+
+12. docker ps -a
+
+13. docker logout
+
+14. docker pull sandeepsagar/redis1
+
+15. docker run --name myredis -d sandeepsagar/redis1
+
+16. docker exec -it myredis redis-cli
+
+17. SET name "Abcdef"
+
+18. GET name
+
+19. exit
+
+20. docker ps -a
+
+21. docker stop myredis
+
+22. docker rm 50a6e4a9c326
+
+23. docker images
+
+24. docker rmi sandeepsagar/redis1
+
