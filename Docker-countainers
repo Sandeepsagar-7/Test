@@ -1,0 +1,268 @@
+version: '3.8'  # Docker Compose file format version
+
+services:
+  wordpress:  # WordPress service
+    image: wordpress:latest
+    ports:
+      - "8081:80"  # Map port 80 of the container to port 8080 of the host
+    environment:
+      WORDPRESS_DB_HOST: db:3306  # Database host
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    depends_on:
+      - db  # Ensures the db service starts first
+
+  db:  # MySQL service
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+
+
+1. Save the file as docker-compose.yml.
+
+2. docker-compose up –d
+
+3. docker-compose down
+
+
+docker-compose up --scale <service name>=2 –d
+
+docker-compose up --scale web=2 -d
+By default, only one container can bind to host port (8080:80)the second container is running without a mapped port because two containers can’t map to same port 
+
+Therefore  define separate containers as
+
+version: "3.9"
+
+services:
+  web1:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+
+  web2:
+    image: nginx:alpine
+    ports:
+      - "8081:80"
+
+
+
+4. docker-compose up –d
+In browser localhost:8080 shows 1st container nginx
+In browser localhost:8081 shows 2st container nginx
+
+
+
+
+
+
+
+1.Create a new folder compose-lab
+  
+create a file docker-compose.yml 
+
+
+version: "3.9"
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+
+
+
+* docker compose up -d
+
+* Open your browser and visit: http://localhost:8080
+
+
+
+2.Write and interpret docker-compose.yml files
+
+
+I.	Modify docker-compose.yml to add a Redis cache:
+
+redis:
+    image: redis:alpine
+
+II. Add a depends_on so web waits for Redis:
+
+web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - redis
+
+
+III. Restart the setup:
+
+docker compose up -d
+docker compose ps
+
+
+IV. Expected Output:
+Three services (web, db, redis) are listed as running.
+
+
+3.Deploy across different machines
+Task:
+I.	Zip your compose-lab folder.
+
+Transfer it to another machine with Docker Compose installed.
+
+II. Run:
+docker compose up -d
+Check that Nginx and Postgres work there as well.
+III. Expected Output:
+The same services run on the new machine without changes
+
+
+
+
+4.Networking and persistent storage
+Task:
+I.	Update your docker-compose.yml to add a custom network and volume:
+
+networks:
+  app-net:
+
+volumes:
+  db-data:
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    networks:
+      - app-net
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+
+II. Run:
+docker compose up –d
+
+
+Option 1: Using psql inside the running container*
+
+1. Start your containers:
+
+   sh
+   docker-compose up -d
+   
+
+2. Open a shell inside the Postgres container:
+
+   sh
+   docker exec -it compose-lab-db-1 psql -U demo -d demo_db
+   
+
+   Replace <container_name> with your Postgres container name (you can check with docker ps). As here
+docker exec -it compose-lab-db-1 psql -U demo -d demo_db
+
+3. Run SQL commands inside psql:
+
+   sql
+   CREATE TABLE users (
+       id SERIAL PRIMARY KEY,
+       name VARCHAR(50),
+       email VARCHAR(100)
+   );
+INSERT INTO users (name, email) VALUES
+   ('Ram', 'Ram@example.com'),
+   ('Kumar', 'kumar@example.com');
+
+4. Verify data:
+
+   SELECT * FROM users;
+
+
+
+
+5.	Faster iteration during development
+Task: 
+I.	Create a simple Flask app in app.py:
+
+from flask import Flask
+app = Flask(__name__)
+@app.route("/")
+def home():
+    return "Hello from Flask + Docker!"
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
+
+
+II. Add a Dockerfile in the same folder:
+
+FROM python:3.10-slim
+WORKDIR /app
+COPY app.py /app/
+RUN pip install flask
+CMD ["python", "app.py"]
+
+
+III. docker-compose.yml
+
+version: "3.9"
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./app:/app     # Mount local folder for instant reload
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
+
+
+IV. Run:
+docker compose up --build
+Visit http://localhost:5000.
+Change the return text in app.py (e.g., "Hello Docker Compose!").
+
+
+V. Rebuild:
+docker compose up –build // not needed
+
+
+VI. Expected Output:
+New message appears instantly after rebuild.
+
