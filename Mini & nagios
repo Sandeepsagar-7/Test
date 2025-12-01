@@ -1,0 +1,37 @@
+Minikube:
+
+minikube delete --all --purge
+minikube profile list
+docker --version
+docker ps
+minikube start --driver=docker
+minikube status
+kubectl get nodes
+kubectl create deployment mynginx --image=nginx
+kubectl expose deployment mynginx --type=NodePort --port=80
+kubectl get svc mynginx
+minikube service mynginx --url
+kubectl scale deployment mynginx --replicas=4
+minikube dashboard
+
+
+nagios:
+
+docker pull jasonrivers/nagios:latest
+
+docker run --name nagiosdemo -p 8888:80 jasonrivers/nagios:latest
+
+http://localhost:8888
+
+o	Login Credentials:
+	Username: nagiosadmin
+	Password: nagios
+
+
+docker stop nagiosdemo
+
+docker rm nagiosdemo
+
+docker images
+
+docker rmijasonrivers/nagios:latest
